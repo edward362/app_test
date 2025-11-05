@@ -1,10 +1,10 @@
-# 💹 Multiplayer Trading Game
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:001F3F,100:004080&height=220&section=header&text=Multiplayer%20Trading%20Game&fontColor=ffffff&fontSize=45&desc=FastAPI%20×%20WebSockets%20|%20Real-Time%20Market%20Simulation%20and%20Trading%20Experience&descAlignY=65" alt="banner"/>
+</p>
 
-**Paris, France — Sep. 2025 – Oct. 2025**
-
-A **real-time multiplayer trading simulation** built with **FastAPI**, **WebSockets**, and **JavaScript**, allowing players to experience how markets work through live asset price updates and interactive trading.
-
----
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&pause=1500&color=93C5FD&center=true&vCenter=true&width=700&lines=Trade+Virtual+Assets+in+Real+Time;Simulate+Market+Volatility+and+Order+Flow;Experience+How+Markets+Actually+Work" alt="typing animation"/>
+</p>
 
 ## 🧠 Overview
 
