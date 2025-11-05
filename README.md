@@ -2,43 +2,52 @@
 
 **Paris, France — Sep. 2025 – Oct. 2025**
 
-A **real-time multiplayer trading simulation** built with **FastAPI**, **WebSockets**, and **JavaScript**, allowing players to experience live market dynamics and understand how financial markets work.
+A **real-time multiplayer trading simulation** built with **FastAPI**, **WebSockets**, and **JavaScript**, allowing players to experience how markets work through live asset price updates and interactive trading.
 
 ---
 
 ## 🧠 Overview
 
-This project simulates a **miniature financial market** where multiple users can trade virtual assets in real time.  
-Players can join or create trading lobbies, buy and sell assets like oil or gold, and observe how their portfolio evolves based on market fluctuations.  
-The goal is to provide an **interactive, educational, and competitive environment** for learning market behavior and decision-making under uncertainty.
+Players join live sessions (“lobbies”) where they can buy and sell virtual assets such as oil, gold, and electronics while observing market fluctuations in real time.  
+The system simulates volatility, price movement, and competition between players, offering a simplified yet realistic introduction to trading mechanics.
 
 ---
 
-## ⚙️ Features
+## ⚙️ Key Features
 
-- 🧩 **Multiplayer Support** – Real-time player interaction through WebSockets  
-- 📈 **Dynamic Price Engine** – Simulated asset price evolution with random volatility  
-- 💰 **Virtual Trading** – Buy and sell assets with an initial cash balance  
-- 🕹️ **Lobby System** – Create or join private game sessions  
-- ⏱️ **Live Updates** – Prices, balances, and trades sync instantly for all players  
-- ⚡ **FastAPI Backend** – Lightweight, asynchronous, and high-performance server  
-
----
-
-## 🧰 Tech Stack
-
-| Layer | Technology |
-|:------|:------------|
-| **Backend** | FastAPI (Python 3.10), asyncio |
-| **Frontend** | HTML, CSS, Vanilla JavaScript |
-| **Communication** | WebSockets |
-| **Hosting** | Render / Replit / Localhost |
+- Real-time multiplayer trading  
+- Dynamic price simulation  
+- Lobby creation and joining system  
+- Live synchronization of prices, balances, and trades  
+- Intuitive web-based user interface  
 
 ---
 
-## 🚀 How to Run Locally
+## 🖼️ Screenshots
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/trading-game.git
-   cd trading-game
+<p align="center">
+  <img src="./images/Screenshot%202025-11-05%20181036.png" width="800"><br>
+  <img src="./images/Screenshot%202025-11-05%20181524.png" width="800"><br>
+  <img src="./images/Screenshot%202025-11-05%20181540.png" width="800"><br>
+  <img src="./images/Screenshot%202025-11-05%20181554.png" width="800"><br>
+  <img src="./images/Screenshot%202025-11-05%20181608.png" width="800">
+</p>
+
+---
+
+## 🧮 Concept
+
+Each player:
+- Starts with a fixed balance  
+- Trades assets at fluctuating prices  
+- Competes to maximize portfolio value before the session ends  
+
+Price movements are randomly generated with volatility-based adjustments to mimic real market microstructure.
+
+---
+
+## 👤 Author
+
+**Edward Bauduin**  
+École des Ponts ParisTech – IMI Department  
+*Project created as part of a software architecture course (Sep.–Oct. 2025).*
