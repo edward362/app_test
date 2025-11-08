@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&pause=1500&color=93C5FD&center=true&vCenter=true&width=700&lines=Trade+Virtual+Assets+in+Real+Time;Simulate+Market+Volatility+and+Order+Flow;Experience+How+Markets+Actually+Work" alt="typing animation"/>
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&pause=1500&color=93C5FD&center=true&vCenter=true&width=700&lines=Trade+Virtual+Assets+in+Real+Time;Simulate+Market+Volatility;Experience+How+Markets+Actually+Work" alt="typing animation"/>
 </p>
 
 ## Overview
