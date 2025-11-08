@@ -6,14 +6,14 @@
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&pause=1500&color=93C5FD&center=true&vCenter=true&width=700&lines=Trade+Virtual+Assets+in+Real+Time;Simulate+Market+Volatility+and+Order+Flow;Experience+How+Markets+Actually+Work" alt="typing animation"/>
 </p>
 
-## 🧠 Overview
+## Overview
 
 Players join live sessions (“lobbies”) where they can buy and sell virtual assets such as oil, gold, and electronics while observing market fluctuations in real time.  
 The system simulates volatility, price movement, and competition between players, offering a simplified yet realistic introduction to trading mechanics.
 
 ---
 
-## ⚙️ Key Features
+## Key Features
 
 - Real-time multiplayer trading  
 - Dynamic price simulation  
@@ -23,7 +23,7 @@ The system simulates volatility, price movement, and competition between players
 
 ---
 
-## 🖼️ Screenshots
+## Screenshots
 
 <p align="center">
   <img src="./images/Screenshot%202025-11-05%20181036.png" width="800"><br>
@@ -35,7 +35,7 @@ The system simulates volatility, price movement, and competition between players
 
 ---
 
-## 🧮 Concept
+## Concept
 
 Each player:
 - Starts with a fixed balance  
@@ -46,7 +46,7 @@ Price movements are randomly generated with volatility-based adjustments to mimi
 
 ---
 
-## 👤 Author
+## Author
 
 **Edward Bauduin**  
 École des Ponts ParisTech – IMI Department  
