@@ -1,0 +1,368 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Multiplayer Trading Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; max-width: 1200px; }
+    h1 { margin-top: 0; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; }
+    .card { border:1px solid #eaeaea; border-radius: 10px; padding: 12px; }
+    .wide { flex: 1 1 60%; }
+    .narrow { flex: 1 1 35%; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    th { background: #f6f6f6; }
+    .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .badge { padding: 2px 6px; border-radius: 6px; background:#eef; font-size:12px; }
+    input[type="number"] { width: 80px; }
+    #log { border:1px solid #ddd; height:120px; overflow:auto; padding:8px; margin-top:12px; }
+    .kpis { display:flex; gap:12px; flex-wrap:wrap; }
+    .kpis div { padding:8px 12px; border:1px solid #eee; border-radius:8px; background:#fafafa; }
+    .muted { color:#666; font-size: 12px; }
+    .hidden { display:none; }
+    .green { background:#e8ffe8; }
+    .red { background:#ffe8e8; }
+  </style>
+</head>
+<body>
+  <h1>Multiplayer Trading Game</h1>
+
+  <div class="card">
+    <div class="controls">
+      <label>Name <input id="name" placeholder="Your name" /></label>
+      <button id="btnConnect">Connect</button>
+      <span>Status: <span id="wsStatus" class="badge red">disconnected</span></span>
+      <span id="userIdBox" class="muted"></span>
+    </div>
+    <div class="controls" style="margin-top:8px;">
+      <button id="btnCreate">Create Lobby</button>
+      <label>Join code <input id="joinCode" placeholder="ABC123" style="width:100px" /></label>
+      <button id="btnJoin">Join Lobby</button>
+    </div>
+    <div style="margin-top:6px;" class="muted">Tip: share your invite code with friends so they can join.</div>
+  </div>
+
+  <div id="lobbyCard" class="card hidden">
+    <h3>Lobby: <span id="lobbyIdTxt">-</span> <span id="lobbyStatus" class="badge">LOBBY</span></h3>
+    <div class="controls">
+      <div>Host: <b id="hostIdTxt"></b></div>
+      <div>Rules:
+        <span class="badge">Start Cap: <span id="ruleCap">-</span></span>
+        <span class="badge">Tick: <span id="ruleTick">-</span>s</span>
+        <span class="badge">Duration: <span id="ruleDur">-</span>s</span>
+      </div>
+      <div id="inviteBox" class="muted"></div>
+    </div>
+    <div class="controls" style="margin-top:8px;">
+      <label><input type="checkbox" id="readyChk"/> Ready</label>
+      <button id="btnStart" disabled>Start Game (host)</button>
+      <span class="muted">All players must be ready.</span>
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>UserId</th><th>Ready</th></tr></thead>
+      <tbody id="playersTbody"></tbody>
+    </table>
+  </div>
+
+  <div id="gameArea" class="hidden">
+    <div class="row">
+      <div class="card wide">
+        <h3>Market</h3>
+        <div class="card" style="margin:8px 0 12px 0;">
+          <div class="controls">
+            <label for="assetSel"><b>Chart asset:</b></label>
+            <select id="assetSel"><option>OIL</option><option>GOLD</option><option>ELECTRONICS</option><option>RICE</option><option>PLUMBER</option></select>
+            <div class="badge">Time left: <span id="timeLeft">-</span>s</div>
+          </div>
+          <canvas id="priceChart" height="120"></canvas>
+        </div>
+
+        <table>
+          <thead><tr><th>Asset</th><th>Price</th><th>Qty</th><th>Side</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="log"></div>
+      </div>
+
+      <div class="card narrow">
+        <h3>Portfolio</h3>
+        <div class="kpis">
+          <div>Cash: <b id="k_cash">-</b></div>
+          <div>Equity: <b id="k_equity">-</b></div>
+          <div>Unrealized PnL: <b id="k_upnl">-</b></div>
+          <div>Realized PnL: <b id="k_rpnl">-</b></div>
+        </div>
+        <table style="margin-top:10px;">
+          <thead><tr><th>Asset</th><th>Qty</th><th>Avg</th><th>Price</th><th>Value</th><th>uPnL</th></tr></thead>
+          <tbody id="pos_rows"></tbody>
+        </table>
+
+        <h3 style="margin-top:16px;">Leaderboard</h3>
+        <table>
+          <thead><tr><th>Name</th><th>Equity</th><th>Realized</th></tr></thead>
+          <tbody id="lb_rows"></tbody>
+        </table>
+
+        <h3 style="margin-top:16px;">Trade History</h3>
+        <table>
+          <thead><tr><th>Time</th><th>Asset</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Realized</th><th>Duration (s)</th></tr></thead>
+          <tbody id="trades_rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+let ws = null;
+let userId = null;
+let lobbyId = null;
+let isHost = false;
+let prices = {};
+
+// --- Client-side defaults (replacing Python templating) ---
+const DEFAULTS = {
+  startingCapital: 10000,
+  tickSeconds: 2,
+  durationSec: 15 * 60
+};
+
+const assets = ["OIL","GOLD","ELECTRONICS","RICE","PLUMBER"];
+
+function log(m){
+  const el = document.getElementById('log'); if(!el) return;
+  const time = new Date().toLocaleTimeString();
+  el.innerHTML = "["+time+"] " + m + "<br/>" + el.innerHTML;
+}
+function setWsStatus(ok){
+  const s = document.getElementById('wsStatus');
+  s.textContent = ok ? "connected" : "disconnected";
+  s.className = "badge " + (ok ? "green" : "red");
+}
+function byId(id){ return document.getElementById(id); }
+
+function showLobbyCard(show){
+  byId('lobbyCard').classList.toggle('hidden', !show);
+}
+function showGameArea(show){
+  byId('gameArea').classList.toggle('hidden', !show);
+}
+
+function renderPlayers(list){
+  const tb = byId('playersTbody'); tb.innerHTML = "";
+  list.forEach(p=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.name}</td><td class="muted">${p.userId}</td><td>${p.ready ? "✅" : "❌"}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ------- Market table ------- */
+function renderOrderRows(){
+  const rows = byId('rows'); rows.innerHTML = "";
+  assets.forEach(a=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${a}</td>
+      <td id="p_${a}">-</td>
+      <td><input id="q_${a}" type="number" min="1" value="10" style="width:80px"/></td>
+      <td>
+        <select id="s_${a}">
+          <option>BUY</option><option>SELL</option>
+        </select>
+      </td>
+      <td><button onclick="sendOrder('${a}')">Send</button></td>`;
+    rows.appendChild(tr);
+  });
+}
+function updatePrices(p){
+  prices = p;
+  assets.forEach(a=>{
+    const cell = byId('p_'+a);
+    if(cell && prices[a] !== undefined){
+      cell.textContent = prices[a].toFixed(2);
+    }
+  });
+}
+
+/* ------- Portfolio render ------- */
+function renderPortfolio(p){
+  byId('k_cash').textContent = p.cash.toFixed(2);
+  byId('k_equity').textContent = p.equity.toFixed(2);
+  byId('k_upnl').textContent = (p.uPnL>=0? "+" : "") + p.uPnL.toFixed(2);
+  byId('k_rpnl').textContent = (p.realizedPnL>=0? "+" : "") + p.realizedPnL.toFixed(2);
+
+  const tbody = byId('pos_rows'); tbody.innerHTML = "";
+  p.positions.forEach(row=>{
+    const tr = document.createElement('tr');
+    const upnlStr = (row.uPnL>=0? "+" : "") + row.uPnL.toFixed(2);
+    tr.innerHTML = `
+      <td>${row.asset}</td><td>${row.qty}</td>
+      <td>${row.avg.toFixed(2)}</td><td>${row.price.toFixed(2)}</td>
+      <td>${row.mktValue.toFixed(2)}</td><td>${upnlStr}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const tbody2 = byId('trades_rows'); tbody2.innerHTML = "";
+  (p.trades || []).slice().reverse().forEach(trd=>{
+    const trEl = document.createElement('tr');
+    const ts = new Date(trd.ts * 1000).toLocaleTimeString();
+    trEl.innerHTML = `
+      <td>${ts}</td><td>${trd.asset}</td><td>${trd.side_open}</td><td>${trd.qty}</td>
+      <td>${Number(trd.entry_price).toFixed(2)}</td><td>${Number(trd.exit_price).toFixed(2)}</td>
+      <td>${(trd.realized_pnl>=0? '+':'') + Number(trd.realized_pnl).toFixed(2)}</td>
+      <td>${trd.duration_sec ?? ''}</td>`;
+    tbody2.appendChild(trEl);
+  });
+}
+
+/* ------- Leaderboard ------- */
+function renderLeaderboard(lb){
+  const tb = byId('lb_rows'); tb.innerHTML = "";
+  (lb.rows || []).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.name}</td><td>${r.equity.toFixed(2)}</td><td>${(r.realizedPnL>=0?'+':'')+r.realizedPnL.toFixed(2)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ------- Chart ------- */
+let chart = null;
+let chartAsset = "OIL";
+const MAX_POINTS = 300;
+const history = { OIL:[], GOLD:[], ELECTRONICS:[], RICE:[], PLUMBER:[] };
+const labels  = [];
+
+function initChart(){
+  const ctx = byId('priceChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: [{ label: chartAsset, data: history[chartAsset], borderWidth: 1, pointRadius: 0, tension: 0.2 }] },
+    options: {
+      animation: false, responsive: true,
+      scales: { x: { ticks: { maxTicksLimit: 8 } }, y: { beginAtZero: false } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+function updateChartAsset(newAsset){
+  chartAsset = newAsset;
+  chart.data.datasets[0].label = chartAsset;
+  chart.data.datasets[0].data  = history[chartAsset];
+  chart.update();
+}
+function pushTickToHistory(){
+  const ts = new Date().toLocaleTimeString();
+  labels.push(ts); if (labels.length > MAX_POINTS) labels.shift();
+  Object.keys(history).forEach(a=>{
+    const arr = history[a]; arr.push(prices[a] ?? null);
+    if (arr.length > MAX_POINTS) arr.shift();
+  });
+  if (chart){ chart.update(); }
+}
+
+/* ------- WS connect / actions ------- */
+function connectWS(){
+  if(ws && ws.readyState === WebSocket.OPEN) return;
+  const proto = (location.protocol === "https:") ? "wss" : "ws";
+  const qs = userId ? ("?userId=" + encodeURIComponent(userId)) : "";
+  ws = new WebSocket(`${proto}://${location.host}/ws${qs}`);
+  ws.onopen = ()=> { setWsStatus(true); log("WebSocket connected"); };
+  ws.onclose = ()=> { setWsStatus(false); log("WebSocket disconnected"); };
+  ws.onmessage = (ev)=> {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === "HELLO"){
+      userId = msg.userId;
+      byId('userIdBox').textContent = "userId: " + userId;
+    } else if (msg.type === "INVITE_CODE"){
+      lobbyId = msg.lobbyId;
+      byId('inviteBox').textContent = "Invite code: " + lobbyId;
+    } else if (msg.type === "LOBBY_STATE"){
+      // update lobby panel
+      showLobbyCard(true);
+      byId('lobbyIdTxt').textContent = msg.lobbyId; lobbyId = msg.lobbyId;
+      byId('lobbyStatus').textContent = msg.status;
+      byId('hostIdTxt').textContent = msg.hostId;
+      byId('ruleCap').textContent = msg.rules.startingCapital ?? msg.rules["startingCapital"];
+      byId('ruleTick').textContent = msg.rules.tickSeconds ?? msg.rules["tickSeconds"];
+      byId('ruleDur').textContent = msg.rules.durationSec ?? msg.rules["durationSec"];
+      renderPlayers(msg.players);
+      isHost = (userId === msg.hostId);
+      byId('btnStart').disabled = !(isHost && msg.status === "LOBBY");
+    } else if (msg.type === "GAME_STARTED"){
+      showGameArea(true);
+      byId('lobbyStatus').textContent = "RUNNING";
+      if(!chart) initChart();
+      renderOrderRows();
+    } else if (msg.type === "GAME_ENDED"){
+      byId('lobbyStatus').textContent = "ENDED";
+      log("Game ended.");
+    } else if (msg.type === "TICK"){
+      updatePrices(msg.prices);
+      byId('timeLeft').textContent = msg.remainingSec ?? "-";
+      pushTickToHistory();
+    } else if (msg.type === "PORTFOLIO"){
+      renderPortfolio(msg);
+    } else if (msg.type === "LEADERBOARD"){
+      renderLeaderboard(msg);
+    } else if (msg.type === "ORDER_ACCEPTED"){
+      log(`Order accepted @ ${msg.price}: ${msg.side} ${msg.asset} x${msg.qty}`);
+    } else if (msg.type === "ORDER_REJECT"){
+      log(`Order rejected: ${msg.reason}`);
+    }
+  };
+}
+
+function createLobby(){
+  const name = byId('name').value || "";
+  ws.send(JSON.stringify({
+    type: "CREATE_LOBBY",
+    name,
+    rules: {
+      startingCapital: DEFAULTS.startingCapital,
+      tickSeconds: DEFAULTS.tickSeconds,
+      durationSec: DEFAULTS.durationSec
+    }
+  }));
+}
+
+function joinLobby(){
+  const name = byId('name').value || "";
+  const code = (byId('joinCode').value || "").toUpperCase();
+  if(!code){ alert("Enter a lobby code."); return; }
+  ws.send(JSON.stringify({type:"JOIN_LOBBY", lobbyId: code, name}));
+}
+
+function setReady(){
+  ws.send(JSON.stringify({type:"SET_READY", ready: byId('readyChk').checked }));
+}
+
+function startGame(){
+  ws.send(JSON.stringify({type:"START_GAME"}));
+}
+
+function sendOrder(asset){
+  if(!ws || ws.readyState !== WebSocket.OPEN){ log("Not connected."); return; }
+  const qty = parseInt(byId('q_'+asset).value, 10);
+  const side = byId('s_'+asset).value;
+  ws.send(JSON.stringify({type:"ORDER", asset, side, qty}));
+}
+
+/* Hook up UI */
+byId('btnConnect').onclick = connectWS;
+byId('btnCreate').onclick = createLobby;
+byId('btnJoin').onclick = joinLobby;
+byId('readyChk').onchange = setReady;
+byId('btnStart').onclick = startGame;
+byId('assetSel').onchange = ()=> { if(chart){ updateChartAsset(byId('assetSel').value); } };
+
+/* Parse ?join=CODE for quick-join */
+(function(){
+  const url = new URL(location.href);
+  const j = url.searchParams.get("join");
+  if (j) { byId('joinCode').value = j; }
+})();
+</script>
+</body>
+</html>
